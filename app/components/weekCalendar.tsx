@@ -123,7 +123,6 @@ const WeekCalendar: React.FC<Props> = ({ selectedDate, events, startHour = 0 }) 
   });
 
   const openForm = (date: Date, startTime?: string, data?: CalendarEvent) => {
-    console.log("test data", date)
     setFormData(
       data
         ? {
@@ -136,7 +135,7 @@ const WeekCalendar: React.FC<Props> = ({ selectedDate, events, startHour = 0 }) 
         : {
             date: date.toLocaleDateString("en-GB"),
             startTime: startTime || "09:00 AM",
-            endTime: "10:00 AM",
+            endTime: startTime ? new Date(new Date(`1970-01-01T${(() => {let [t, m] = startTime.split(' '); let [h, min] = t.split(':').map(Number); h += (m === 'PM' && h !== 12) ? 12 : 0; h = (m === 'AM' && h === 12) ? 0 : h; return `${h.toString().padStart(2,'0')}:${min.toString().padStart(2,'0')}:00`; })()}`).getTime() + 3600000).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12:true}) : "10:00 AM",
           }
     );
   };
@@ -203,11 +202,7 @@ const WeekCalendar: React.FC<Props> = ({ selectedDate, events, startHour = 0 }) 
                       const left = (offset / SLOT_MINUTES) * SLOT_WIDTH;
                       const width = (duration / SLOT_MINUTES) * SLOT_WIDTH;
                       const top = groupIdx * (EVENT_HEIGHT + EVENT_MARGIN);
-                      const fullDate = weekDates[dayIdx].toLocaleDateString("en-GB");
-                      console.log("test events", events, event)
                       const targetEvent = events.find(e => e.id === event.id);
-                      console.log(" targetEvent: ", targetEvent)
-
                       return (
                         <div
                           key={`${day}-event-${groupIdx}-${idxInGroup}`}
@@ -220,7 +215,6 @@ const WeekCalendar: React.FC<Props> = ({ selectedDate, events, startHour = 0 }) 
                             marginBottom: EVENT_MARGIN,
                           }}
                           onClick={(e) => {
-                            console.log("test update", dateObj, targetEvent)
                             e.stopPropagation();
                             if (targetEvent) openForm(dateObj, undefined, targetEvent);
                           }}

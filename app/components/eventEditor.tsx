@@ -15,6 +15,7 @@ interface EventFormProps {
   initialData?: Partial<EventFormData>;
 }
 
+
 const EventForm: React.FC<EventFormProps> = ({ onClose, initialData = {} }) => {
   const { addEvent, updateEvent, deleteEvent } = useEvents();
 
@@ -22,13 +23,13 @@ const EventForm: React.FC<EventFormProps> = ({ onClose, initialData = {} }) => {
 
   const [formData, setFormData] = useState<EventFormData>({
     id: initialData.id,
-    eventName: initialData.eventName || "",
-    startTime: initialData.startTime || "09:00 AM",
-    endTime: initialData.endTime || "10:00 AM",
-    date: initialData.date || new Date().toLocaleDateString("en-GB"),
+    eventName: initialData.eventName ?? "",
+    startTime: initialData.startTime ?? "09:00 AM",
+    endTime: initialData.endTime ?? "10:00 AM",
+    date: initialData.date ?? new Date().toLocaleDateString("en-GB"),
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -65,6 +66,22 @@ const EventForm: React.FC<EventFormProps> = ({ onClose, initialData = {} }) => {
     }
   };
 
+  const pad2 = (num: string | number) => num.toString().padStart(2, "0");
+
+  const parseTime = (time: string) => {
+    const [t, ampm] = time.split(" ");
+    let [hour, minute] = t.split(":");
+    hour = pad2(hour);
+    minute = pad2(minute);
+    return { hour, minute, ampm };
+  };
+
+  const buildTime = (hour: string, minute: string, ampm: string) => {
+    return `${pad2(hour)}:${pad2(minute)} ${ampm}`;
+  }
+
+  const { hour: startHour, minute: startMinute, ampm: startAmPm } = parseTime(formData.startTime);
+  const { hour: endHour, minute: endMinute, ampm: endAmPm } = parseTime(formData.endTime);
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-lg w-96 space-y-4">
@@ -83,26 +100,122 @@ const EventForm: React.FC<EventFormProps> = ({ onClose, initialData = {} }) => {
 
         <div>
           <label className="block text-sm font-medium">Start Time</label>
-          <input
-            name="startTime"
-            value={formData.startTime}
-            onChange={handleChange}
-            className="w-full border rounded p-2 text-sm"
-            placeholder="e.g., 09:00 AM"
-            required
-          />
+          <div className="flex gap-2">
+            <select
+              name="startHour"
+              value={startHour}
+              onChange={(e) => {
+                const newHour = e.target.value;
+                setFormData(prev => ({
+                  ...prev,
+                  startTime: buildTime(newHour, startMinute, startAmPm),
+                }));
+              }}
+              className="border rounded p-2 text-sm"
+              required
+            >
+              {[...Array(12)].map((_, i) => {
+                const val = (i + 1).toString().padStart(2, "0");
+                return <option key={val} value={val}>{val}</option>;
+              })}
+            </select>
+
+            <select
+              name="startMinute"
+              value={startMinute}
+              onChange={(e) => {
+                const newMinute = e.target.value;
+                setFormData(prev => ({
+                  ...prev,
+                  startTime: buildTime(startHour, newMinute, startAmPm),
+                }));
+              }}
+              className="border rounded p-2 text-sm"
+              required
+            >
+              {["00", "15", "30", "45"].map(val => (
+                <option key={val} value={val}>{val}</option>
+              ))}
+            </select>
+
+            <select
+              name="startAmPm"
+              value={startAmPm}
+              onChange={(e) => {
+                const newAmPm = e.target.value;
+                setFormData(prev => ({
+                  ...prev,
+                  startTime: buildTime(startHour, startMinute, newAmPm),
+                }));
+              }}
+              className="border rounded p-2 text-sm"
+              required
+            >
+              {["AM", "PM"].map(val => (
+                <option key={val} value={val}>{val}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium">End Time</label>
-          <input
-            name="endTime"
-            value={formData.endTime}
-            onChange={handleChange}
-            className="w-full border rounded p-2 text-sm"
-            placeholder="e.g., 10:00 AM"
-            required
-          />
+          <div className="flex gap-2">
+              <select
+                name="endHour"
+                value={endHour}
+                onChange={(e) => {
+                  const newHour = e.target.value;
+                  setFormData(prev => ({
+                    ...prev,
+                    endTime: buildTime(newHour, endMinute, endAmPm),
+                  }));
+                }}
+                className="border rounded p-2 text-sm"
+                required
+              >
+                {[...Array(12)].map((_, i) => {
+                  const val = (i + 1).toString().padStart(2, "0");
+                  return <option key={val} value={val}>{val}</option>;
+                })}
+              </select>
+
+              <select
+                name="endMinute"
+                value={endMinute}
+                onChange={(e) => {
+                  const newMinute = e.target.value;
+                  setFormData(prev => ({
+                    ...prev,
+                    endTime: buildTime(endHour, newMinute, endAmPm),
+                  }));
+                }}
+                className="border rounded p-2 text-sm"
+                required
+              >
+                {["00", "15", "30", "45"].map(val => (
+                  <option key={val} value={val}>{val}</option>
+                ))}
+              </select>
+
+              <select
+                name="endAmPm"
+                value={endAmPm}
+                onChange={(e) => {
+                  const newAmPm = e.target.value;
+                  setFormData(prev => ({
+                    ...prev,
+                    endTime: buildTime(endHour, endMinute, newAmPm),
+                  }));
+                }}
+                className="border rounded p-2 text-sm"
+                required
+              >
+                {["AM", "PM"].map(val => (
+                  <option key={val} value={val}>{val}</option>
+                ))}
+              </select>
+            </div>
         </div>
 
         <div>
