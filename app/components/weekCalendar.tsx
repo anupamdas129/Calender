@@ -197,6 +197,7 @@ const WeekCalendar: React.FC<Props> = ({ selectedDate, events, startHour = 0 }) 
 
                   {grouped.flatMap((group, groupIdx) =>
                     group.map((event, idxInGroup) => {
+                      console.log(event)
                       const offset = toMinutes(event.start);
                       const duration = getDuration(event.start, event.end);
                       const left = (offset / SLOT_MINUTES) * SLOT_WIDTH;

@@ -5,8 +5,8 @@ const mockEvents = [
     year: 2025,
     month: 6,
     event: {
-      eventName: "Team Standup",
-      date: "19/6/2025",
+      eventName: "Team Standup 15",
+      date: "15/6/2025",
       startTime: "9:00 AM",
       endTime: "9:30 AM",
     },

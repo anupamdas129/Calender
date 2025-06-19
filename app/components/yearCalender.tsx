@@ -16,15 +16,20 @@ const YearCalendar: React.FC = () => {
 
   const weeklyEvents = useMemo(() => {
     if (!selectedDate) return [];
+  
     const start = new Date(selectedDate);
+    start.setHours(0, 0, 0, 0);
     start.setDate(start.getDate() - start.getDay());
+  
     const weekStart = new Date(start);
     const weekEnd = new Date(start);
     weekEnd.setDate(weekStart.getDate() + 6);
-
+    weekEnd.setHours(23, 59, 59, 999);
+  
     return allEvents.filter(({ event }) => {
       const [day, month, year] = event.date.split("/").map(Number);
       const d = new Date(year, month - 1, day);
+      d.setHours(0, 0, 0, 0);
       return d >= weekStart && d <= weekEnd;
     });
   }, [selectedDate, allEvents]);
