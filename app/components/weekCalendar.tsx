@@ -2,7 +2,7 @@
 import React, { useMemo, useEffect, useRef, useState } from "react";
 import { days } from "../helper";
 import EventForm from "../components/eventEditor";
-import { useEvents } from "../context/EventsContext";
+import moment from "moment";
 
 const SLOT_MINUTES = 60;
 const SLOT_WIDTH = 100;
@@ -76,9 +76,10 @@ interface Props {
   selectedDate: Date;
   events: CalendarEvent[];
   startHour?: number;
+  dateFormat?: string;
 }
 
-const WeekCalendar: React.FC<Props> = ({ selectedDate, events, startHour = 0 }) => {
+const WeekCalendar: React.FC<Props> = ({ selectedDate, events, startHour = 0, dateFormat = "DD-MM-YYYY" }) => {
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState<any | null>(null);
@@ -140,6 +141,12 @@ const WeekCalendar: React.FC<Props> = ({ selectedDate, events, startHour = 0 }) 
     );
   };
 
+  const defaultFormat = "DD-MM-YYYY";
+  const finalFormat = useMemo(() => {
+    const testDate = moment().format(dateFormat);
+    return moment(testDate, dateFormat, true).isValid() ? dateFormat : defaultFormat;
+  }, [dateFormat]);
+
   return (
     <div className="w-full font-sans text-sm text-gray-700">
       <div className="flex">
@@ -147,14 +154,18 @@ const WeekCalendar: React.FC<Props> = ({ selectedDate, events, startHour = 0 }) 
           <div className="h-[33px] border-b border-r border-gray-300 p-2 font-semibold text-gray-600 bg-gray-200 sticky top-0 z-10 tracking-wide uppercase text-xs">
             Day
           </div>
-          {days.map((day) => (
+          {days.map((day, dayIdx) => (
             <div
               key={day}
               className="flex flex-col justify-center items-center border-b border-gray-300 bg-gray-200 p-2 hover:bg-gray-100 transition-colors duration-200"
               style={{ height: `${rowHeights[day]}px` }}
             >
-              <div className="text-gray-600 font-medium">{day}</div>
-              <div className="text-xs text-gray-400">{weekDates[days.indexOf(day)].getDate()}</div>
+              <div className="text-gray-600 font-medium mb-1">{day}</div>
+              <div className="text-xs text-gray-400">
+                <div className="text-xs text-gray-400">
+                  {moment(weekDates[dayIdx]).format(finalFormat || "DD-MM-YYYY")}
+              </div>
+             </div>
             </div>
           ))}
         </div>
@@ -197,7 +208,6 @@ const WeekCalendar: React.FC<Props> = ({ selectedDate, events, startHour = 0 }) 
 
                   {grouped.flatMap((group, groupIdx) =>
                     group.map((event, idxInGroup) => {
-                      console.log(event)
                       const offset = toMinutes(event.start);
                       const duration = getDuration(event.start, event.end);
                       const left = (offset / SLOT_MINUTES) * SLOT_WIDTH;

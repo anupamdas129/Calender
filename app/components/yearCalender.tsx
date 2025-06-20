@@ -2,7 +2,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import DatePicker from 'react-datepicker';
 import { createPopper } from '@popperjs/core';
-import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import 'react-datepicker/dist/react-datepicker.css';
 import WeekCalendar from '../components/weekCalendar';
 import { useEvents } from '../context/EventsContext';
@@ -84,26 +84,32 @@ const YearCalendar: React.FC = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between px-4 py-3 border-b relative">
-        <div className="flex items-center space-x-3">
-          <button onClick={() => changeWeek(-1)}>
+      <div className="border-b px-4 py-3 flex items-center justify-between relative bg-white">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => changeWeek(-1)}
+            className="p-1 hover:bg-gray-100 rounded"
+          >
             <ChevronLeft className="w-5 h-5" />
           </button>
-
-          <span className="text-lg font-medium">{formatFullDate()}</span>
 
           <button
             ref={buttonRef}
             onClick={toggleCalendar}
-            className="flex items-center text-gray-600"
+            className="flex items-center text-lg font-medium text-gray-700 hover:bg-gray-100 rounded p-2 focus:outline-none"
           >
-            <ChevronDown className="w-4 h-4 ml-1" />
+            {formatFullDate()}
+            {calendarOpen ? (
+              <ChevronUp className="w-4 h-4 ml-1" />
+            ) : (
+              <ChevronDown className="w-4 h-4 ml-1" />
+            )}
           </button>
 
           {calendarOpen && (
             <div
               ref={calendarRef}
-              className="z-50 bg-white shadow-lg rounded mt-2 absolute"
+              className="absolute z-50 mt-2 bg-white border shadow-md rounded-md"
               style={{ top: '100%', left: '10%' }}
             >
               <DatePicker
@@ -113,24 +119,27 @@ const YearCalendar: React.FC = () => {
                   setCalendarOpen(false);
                 }}
                 inline
-                calendarClassName="bg-white shadow-md border rounded-md"
+                calendarClassName="bg-white"
               />
             </div>
           )}
 
-          <button onClick={() => changeWeek(1)}>
+          <button
+            onClick={() => changeWeek(1)}
+            className="p-1 hover:bg-gray-100 rounded"
+          >
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
 
         <button
           onClick={() => setSelectedDate(new Date())}
-          className="text-blue-600 hover:underline"
+          className="text-gray-700 text-lg hover:bg-gray-100 rounded p-2"
         >
           Today
         </button>
       </div>
-      <WeekCalendar selectedDate={selectedDate} events={weeklyEvents} startHour={startHour} />
+      <WeekCalendar selectedDate={selectedDate} events={weeklyEvents} startHour={startHour} dateFormat="DD MMM YYYY"/>
     </div>
   );
 };

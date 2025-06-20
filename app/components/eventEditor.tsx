@@ -1,6 +1,7 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useEvents } from "../context/EventsContext";
+import moment from "moment";
 
 interface EventFormData {
   id?: string;
@@ -17,10 +18,8 @@ interface EventFormProps {
 
 
 const EventForm: React.FC<EventFormProps> = ({ onClose, initialData = {} }) => {
-  const { addEvent, updateEvent, deleteEvent } = useEvents();
-
+  const { events: allEvents, addEvent, updateEvent, deleteEvent } = useEvents();
   const isEdit = Boolean(initialData?.id);
-
   const [formData, setFormData] = useState<EventFormData>({
     id: initialData.id,
     eventName: initialData.eventName ?? "",
@@ -28,16 +27,99 @@ const EventForm: React.FC<EventFormProps> = ({ onClose, initialData = {} }) => {
     endTime: initialData.endTime ?? "10:00 AM",
     date: initialData.date ?? new Date().toLocaleDateString("en-GB"),
   });
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [endYear, setEndYear] = useState<number>(new Date().getFullYear() + 1);
+  const [timeError, setTimeError] = useState<string | null>(null);
+
+   useEffect(() => {
+    const parts = formData.date.split("/");
+    const startYear = parts.length === 3 ? parseInt(parts[2]) : new Date().getFullYear();
+    setEndYear((prev) => (prev <= startYear ? startYear + 1 : prev));
+  }, [formData.date]);
+
+   const handleEndYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const parts = formData.date.split("/");
+    const startYear = parts.length === 3 ? parseInt(parts[2]) : new Date().getFullYear();
+
+    let value = parseInt(e.target.value);
+    if (isNaN(value)) return;
+    if (value <= startYear) {
+      value = startYear + 1;
+    }
+    setEndYear(value);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
 
-    const [_, month, year] = formData.date.split("/").map(Number);
+  const [_, month, year] = formData.date.split("/").map(Number);
+
+  const parseToMoment = (timeStr: string, dateStr: string) =>
+    moment(`${dateStr} ${timeStr}`, "DD/MM/YYYY hh:mm A");
+
+  const start = parseToMoment(formData.startTime, formData.date);
+  const end = parseToMoment(formData.endTime, formData.date);
+
+  if (!start.isBefore(end)) {
+    setTimeError("Start time must be earlier than end time.");
+    return;
+  }
+
+  setTimeError(null);
+
+  const createEvent = (dateStr: string) => ({
+    id: `event-${dateStr.replace(/\//g, '')}-${Date.now()}`,
+    year: Number(dateStr.split("/")[2]),
+    month: Number(dateStr.split("/")[1]),
+    event: {
+      eventName: formData.eventName,
+      date: dateStr,
+      startTime: formData.startTime,
+      endTime: formData.endTime,
+    },
+  });
+
+  if (showAdvanced) {
+    const dayOfWeek = moment(formData.date, "DD/MM/YYYY").day();
+    const start = moment(formData.date, "DD/MM/YYYY");
+    const end = moment(`${endYear}-12-31`, "YYYY-MM-DD");
+
+    let current = start.clone();
+    while (current.isSameOrBefore(end)) {
+      if (current.day() === dayOfWeek) {
+        const dateStr = current.format("DD/MM/YYYY");
+
+        // Check if event already exists on this date
+        const existingEvent = allEvents.find(
+          (e) => e.event.date === dateStr && e.event.eventName === formData.eventName
+        );
+
+        const eventData = {
+          year: current.year(),
+          month: current.month() + 1,
+          event: {
+            eventName: formData.eventName,
+            date: dateStr,
+            startTime: formData.startTime,
+            endTime: formData.endTime,
+          },
+        };
+
+        if (existingEvent) {
+          updateEvent(existingEvent.id, { id: existingEvent.id, ...eventData });
+        } else {
+          const newId = `event-${dateStr.replace(/\//g, '')}-${Date.now()}`;
+          addEvent({ id: newId, ...eventData });
+        }
+      }
+      current.add(1, "week");
+    }
+  } else {
     const calendarEvent = {
       id: formData.id ?? `event-${Date.now()}`,
       year,
@@ -55,9 +137,12 @@ const EventForm: React.FC<EventFormProps> = ({ onClose, initialData = {} }) => {
     } else {
       addEvent(calendarEvent);
     }
+  }
 
-    onClose();
-  };
+  onClose();
+};
+
+
 
   const handleDelete = () => {
     if (formData.id) {
@@ -82,6 +167,8 @@ const EventForm: React.FC<EventFormProps> = ({ onClose, initialData = {} }) => {
 
   const { hour: startHour, minute: startMinute, ampm: startAmPm } = parseTime(formData.startTime);
   const { hour: endHour, minute: endMinute, ampm: endAmPm } = parseTime(formData.endTime);
+
+  
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-lg w-96 space-y-4">
@@ -216,19 +303,53 @@ const EventForm: React.FC<EventFormProps> = ({ onClose, initialData = {} }) => {
                 ))}
               </select>
             </div>
+            {timeError && (
+              <p className="text-red-600 text-xs mt-1">{timeError}</p>
+            )}
         </div>
 
         <div>
           <label className="block text-sm font-medium">Date</label>
           <input
+            type="date"
             name="date"
-            value={formData.date}
-            onChange={handleChange}
+            value={moment(formData.date, "DD/MM/YYYY").format("YYYY-MM-DD")}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                date: moment(e.target.value, "YYYY-MM-DD").format("DD/MM/YYYY"),
+              })
+            }
             className="w-full border rounded p-2 text-sm"
-            placeholder="DD/MM/YYYY"
             required
           />
         </div>
+
+        <div className="mt-4">
+  <button
+    type="button"
+    onClick={() => setShowAdvanced((prev) => !prev)}
+    className="text-blue-600 text-sm underline"
+  >
+    {showAdvanced ? "Hide Advanced Options" : "Show Advanced Options"}
+  </button>
+
+  {showAdvanced && (
+      <div className="mt-3 space-y-2">
+        <div>
+          <label className="block text-sm font-medium">End Year</label>
+          <input
+            type="number"
+            max={2100}
+            value={endYear}
+            onChange={handleEndYearChange}
+            className="w-full border rounded p-2 text-sm"
+          />
+        </div>
+      </div>
+    )}
+</div>
+
 
         <div className="flex justify-between items-center">
           {isEdit ? (
